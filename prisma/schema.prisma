@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                 Int        @id @default(autoincrement())
+  name               String
+  email              String     @unique
+  password           String
+  username           String     @unique
+  bio                String?
+  location           String?
+  college            String?
+  avatar             String?
+  rating             Float      @default(0)
+  reviewCount        Int        @default(0)
+  completedExchanges Int        @default(0)
+  createdAt          DateTime   @default(now())
+  skills             Skill[]
+  sentRequests       Request[]  @relation("SentRequests")
+  receivedRequests   Request[]  @relation("ReceivedRequests")
+  reviewsGiven       Review[]   @relation("ReviewsGiven")
+  reviewsReceived    Review[]   @relation("ReviewsReceived")
+  exchangesAsUser1   Exchange[] @relation("ExchangeUser1")
+  exchangesAsUser2   Exchange[] @relation("ExchangeUser2")
+}
+
+model Skill {
+  id       Int       @id @default(autoincrement())
+  name     String
+  category String
+  level    String
+  type     String
+  userId   Int
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requests Request[]
+}
+
+model Request {
+  id          Int      @id @default(autoincrement())
+  fromUserId  Int
+  toUserId    Int
+  skillId     Int
+  message     String?
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  fromUser    User     @relation("SentRequests",     fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser      User     @relation("ReceivedRequests", fields: [toUserId],   references: [id], onDelete: Cascade)
+  skill       Skill    @relation(fields: [skillId],  references: [id], onDelete: Cascade)
+  exchange    Exchange?
+}
+
+model Exchange {
+  id                Int      @id @default(autoincrement())
+  requestId         Int      @unique
+  user1Id           Int
+  user2Id           Int
+  user1Skill        String
+  user2Skill        String
+  progress          Int      @default(0)
+  sessionsCompleted Int      @default(0)
+  totalSessions     Int      @default(5)
+  status            String   @default("active")
+  nextSession       String?
+  createdAt         DateTime @default(now())
+  request           Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user1             User     @relation("ExchangeUser1", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2             User     @relation("ExchangeUser2", fields: [user2Id], references: [id], onDelete: Cascade)
+  messages          Message[]
+  reviews           Review[]
+}
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  exchangeId Int
+  senderId   Int
+  text       String
+  createdAt  DateTime @default(now())
+  exchange   Exchange @relation(fields: [exchangeId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  exchangeId Int
+  authorId   Int
+  targetId   Int
+  rating     Int
+  text       String
+  skill      String
+  createdAt  DateTime @default(now())
+  exchange   Exchange @relation(fields: [exchangeId], references: [id], onDelete: Cascade)
+  author     User     @relation("ReviewsGiven",    fields: [authorId], references: [id], onDelete: Cascade)
+  target     User     @relation("ReviewsReceived", fields: [targetId], references: [id], onDelete: Cascade)
+}
