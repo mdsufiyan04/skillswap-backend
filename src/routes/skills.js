@@ -26,15 +26,16 @@ router.get('/', async (req, res) => {
 // POST /api/skills — add skill
 router.post('/', auth, async (req, res) => {
   try {
-    const { name, category, level, type } = req.body;
+    const { name, category, level, type, description } = req.body;
     if (!name || !category || !level || !type)
-      return res.status(400).json({ error: 'All fields required' });
+      return res.status(400).json({ error: 'Name, category, level and type are required' });
     const skill = await prisma.skill.create({
-      data: { name, category, level, type, userId: req.user.userId }
+      data: { name, category, level, type, description, userId: req.user.userId }
     });
     res.status(201).json(skill);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    console.error(err);
+    res.status(500).json({ error: err.message || 'Server error' });
   }
 });
 

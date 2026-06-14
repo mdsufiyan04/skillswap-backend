@@ -59,12 +59,12 @@ router.put('/:id', auth, async (req, res) => {
       data: { status }
     });
 
-    // If accepted, create an exchange automatically
+    let exchange = null;
     if (status === 'accepted') {
       const toUserSkill = await prisma.skill.findFirst({
         where: { userId: request.toUserId, type: 'offer' }
       });
-      await prisma.exchange.create({
+      exchange = await prisma.exchange.create({
         data: {
           requestId: request.id,
           user1Id:   request.fromUserId,
@@ -75,7 +75,7 @@ router.put('/:id', auth, async (req, res) => {
       });
     }
 
-    res.json(updated);
+    res.json({ ...updated, exchangeId: exchange?.id ?? null, exchange });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

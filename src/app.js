@@ -7,6 +7,7 @@ const userRoutes     = require('./routes/users');
 const skillRoutes    = require('./routes/skills');
 const requestRoutes  = require('./routes/requests');
 const exchangeRoutes = require('./routes/exchanges');
+const projectRoutes  = require('./routes/projects');
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use('/api/users',     userRoutes);
 app.use('/api/skills',    skillRoutes);
 app.use('/api/requests',  requestRoutes);
 app.use('/api/exchanges', exchangeRoutes);
+app.use('/api/projects',  projectRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'SkillSwap API running' }));
 

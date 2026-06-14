@@ -9,71 +9,104 @@ datasource db {
 }
 
 model User {
-  id                 Int        @id @default(autoincrement())
+  id                 Int                @id @default(autoincrement())
   name               String
-  email              String     @unique
+  email              String             @unique
   password           String
-  username           String     @unique
+  username           String             @unique
   bio                String?
   location           String?
   college            String?
   avatar             String?
-  rating             Float      @default(0)
-  reviewCount        Int        @default(0)
-  completedExchanges Int        @default(0)
-  createdAt          DateTime   @default(now())
+  rating             Float              @default(0)
+  reviewCount        Int                @default(0)
+  completedExchanges Int                @default(0)
+  createdAt          DateTime           @default(now())
   skills             Skill[]
-  sentRequests       Request[]  @relation("SentRequests")
-  receivedRequests   Request[]  @relation("ReceivedRequests")
-  reviewsGiven       Review[]   @relation("ReviewsGiven")
-  reviewsReceived    Review[]   @relation("ReviewsReceived")
-  exchangesAsUser1   Exchange[] @relation("ExchangeUser1")
-  exchangesAsUser2   Exchange[] @relation("ExchangeUser2")
+  sentRequests       Request[]          @relation("SentRequests")
+  receivedRequests   Request[]          @relation("ReceivedRequests")
+  reviewsGiven       Review[]           @relation("ReviewsGiven")
+  reviewsReceived    Review[]           @relation("ReviewsReceived")
+  exchangesAsUser1   Exchange[]         @relation("ExchangeUser1")
+  exchangesAsUser2   Exchange[]         @relation("ExchangeUser2")
+  resourcesAdded     ExchangeResource[]
+  projectsCreated    Project[]            @relation("ProjectAdmin")
+  projectApplications ProjectApplication[]
+  projectMemberships  ProjectMember[]
+  projectMessages     ProjectMessage[]
+  projectPosts        ProjectPost[]
 }
 
 model Skill {
-  id       Int       @id @default(autoincrement())
-  name     String
-  category String
-  level    String
-  type     String
-  userId   Int
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  requests Request[]
+  id          Int       @id @default(autoincrement())
+  name        String
+  category    String
+  level       String
+  type        String
+  description String?
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requests    Request[]
 }
 
 model Request {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   fromUserId  Int
   toUserId    Int
   skillId     Int
   message     String?
-  status      String   @default("pending")
-  createdAt   DateTime @default(now())
-  fromUser    User     @relation("SentRequests",     fields: [fromUserId], references: [id], onDelete: Cascade)
-  toUser      User     @relation("ReceivedRequests", fields: [toUserId],   references: [id], onDelete: Cascade)
-  skill       Skill    @relation(fields: [skillId],  references: [id], onDelete: Cascade)
+  status      String    @default("pending")
+  createdAt   DateTime  @default(now())
+  fromUser    User      @relation("SentRequests",     fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser      User      @relation("ReceivedRequests", fields: [toUserId],   references: [id], onDelete: Cascade)
+  skill       Skill     @relation(fields: [skillId],  references: [id], onDelete: Cascade)
   exchange    Exchange?
 }
 
 model Exchange {
-  id                Int      @id @default(autoincrement())
-  requestId         Int      @unique
+  id                Int                @id @default(autoincrement())
+  requestId         Int                @unique
   user1Id           Int
   user2Id           Int
   user1Skill        String
   user2Skill        String
-  progress          Int      @default(0)
-  sessionsCompleted Int      @default(0)
-  totalSessions     Int      @default(5)
-  status            String   @default("active")
+  progress          Int                @default(0)
+  sessionsCompleted Int                @default(0)
+  totalSessions     Int                @default(5)
+  status            String             @default("active")
   nextSession       String?
-  createdAt         DateTime @default(now())
-  request           Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  user1             User     @relation("ExchangeUser1", fields: [user1Id], references: [id], onDelete: Cascade)
-  user2             User     @relation("ExchangeUser2", fields: [user2Id], references: [id], onDelete: Cascade)
+  createdAt         DateTime           @default(now())
+  request           Request            @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user1             User               @relation("ExchangeUser1", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2             User               @relation("ExchangeUser2", fields: [user2Id], references: [id], onDelete: Cascade)
   messages          Message[]
   reviews           Review[]
+  sessions          Session[]
+  resources         ExchangeResource[]
+}
+
+model Session {
+  id         Int      @id @default(autoincrement())
+  exchangeId Int
+  date       String
+  time       String
+  topic      String
+  meetLink   String?
+  completed  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  exchange   Exchange @relation(fields: [exchangeId], references: [id], onDelete: Cascade)
+}
+
+model ExchangeResource {
+  id         Int      @id @default(autoincrement())
+  exchangeId Int
+  title      String
+  url        String
+  type       String
+  addedById  Int
+  createdAt  DateTime @default(now())
+  exchange   Exchange @relation(fields: [exchangeId], references: [id], onDelete: Cascade)
+  addedBy    User     @relation(fields: [addedById], references: [id], onDelete: Cascade)
 }
 
 model Message {
@@ -97,4 +130,95 @@ model Review {
   exchange   Exchange @relation(fields: [exchangeId], references: [id], onDelete: Cascade)
   author     User     @relation("ReviewsGiven",    fields: [authorId], references: [id], onDelete: Cascade)
   target     User     @relation("ReviewsReceived", fields: [targetId], references: [id], onDelete: Cascade)
+}
+
+model Project {
+  id           Int                  @id @default(autoincrement())
+  title        String
+  tagline      String
+  description  String
+  category     String
+  stage        String               @default("Idea")
+  githubUrl    String?
+  figmaUrl     String?
+  demoUrl      String?
+  websiteUrl   String?
+  coverImage   String?
+  adminId      Int
+  createdAt    DateTime             @default(now())
+  admin        User                 @relation("ProjectAdmin", fields: [adminId], references: [id], onDelete: Cascade)
+  roles        ProjectRole[]
+  applications ProjectApplication[]
+  members      ProjectMember[]
+  messages     ProjectMessage[]
+  posts        ProjectPost[]
+  tasks        ProjectTask[]
+}
+
+model ProjectRole {
+  id           Int                  @id @default(autoincrement())
+  projectId    Int
+  title        String
+  description  String
+  skillsNeeded String
+  filled       Boolean              @default(false)
+  project      Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  applications ProjectApplication[]
+  members      ProjectMember[]
+}
+
+model ProjectApplication {
+  id                Int         @id @default(autoincrement())
+  projectId         Int
+  userId            Int
+  roleId            Int
+  message           String
+  contributionLevel String
+  status            String      @default("pending")
+  createdAt         DateTime    @default(now())
+  project           Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role              ProjectRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+}
+
+model ProjectMember {
+  id                Int         @id @default(autoincrement())
+  projectId         Int
+  userId            Int
+  roleId            Int
+  contributionLevel String
+  joinedAt          DateTime    @default(now())
+  project           Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role              ProjectRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+}
+
+model ProjectMessage {
+  id        Int      @id @default(autoincrement())
+  projectId Int
+  senderId  Int
+  text      String
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+}
+
+model ProjectPost {
+  id        Int      @id @default(autoincrement())
+  projectId Int
+  authorId  Int
+  content   String
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model ProjectTask {
+  id         Int      @id @default(autoincrement())
+  projectId  Int
+  title      String
+  status     String   @default("todo")
+  assignedTo Int?
+  createdAt  DateTime @default(now())
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
