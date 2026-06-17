@@ -1,9 +1,8 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/prisma');
 const auth = require('../middleware/authMiddleware');
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // GET /api/projects/my/projects — get my projects (must be before /:id)
 router.get('/my/projects', auth, async (req, res) => {
@@ -251,6 +250,15 @@ router.post('/:id/messages', auth, async (req, res) => {
 router.post('/:id/posts', auth, async (req, res) => {
   try {
     const { content } = req.body;
+    const project = await prisma.project.findUnique({ where: { id: parseInt(req.params.id) } });
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    
+    const isMember = await prisma.projectMember.findFirst({
+      where: { projectId: parseInt(req.params.id), userId: req.user.userId }
+    });
+    if (!isMember && project.adminId !== req.user.userId)
+      return res.status(403).json({ error: 'Not a team member' });
+    
     const post = await prisma.projectPost.create({
       data: { projectId: parseInt(req.params.id), authorId: req.user.userId, content },
       include: { author: { select: { id: true, name: true, avatar: true } } }
@@ -278,6 +286,15 @@ router.get('/:id/tasks', auth, async (req, res) => {
 router.post('/:id/tasks', auth, async (req, res) => {
   try {
     const { title, assignedTo } = req.body;
+    const project = await prisma.project.findUnique({ where: { id: parseInt(req.params.id) } });
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    
+    const isMember = await prisma.projectMember.findFirst({
+      where: { projectId: parseInt(req.params.id), userId: req.user.userId }
+    });
+    if (!isMember && project.adminId !== req.user.userId)
+      return res.status(403).json({ error: 'Not a team member' });
+    
     const task = await prisma.projectTask.create({
       data: { projectId: parseInt(req.params.id), title, assignedTo: assignedTo ? parseInt(assignedTo) : null }
     });
@@ -291,6 +308,15 @@ router.post('/:id/tasks', auth, async (req, res) => {
 router.put('/:id/tasks/:taskId', auth, async (req, res) => {
   try {
     const { status } = req.body;
+    const project = await prisma.project.findUnique({ where: { id: parseInt(req.params.id) } });
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    
+    const isMember = await prisma.projectMember.findFirst({
+      where: { projectId: parseInt(req.params.id), userId: req.user.userId }
+    });
+    if (!isMember && project.adminId !== req.user.userId)
+      return res.status(403).json({ error: 'Not a team member' });
+    
     const task = await prisma.projectTask.update({
       where: { id: parseInt(req.params.taskId) },
       data: { status }

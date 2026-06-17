@@ -1,9 +1,8 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/prisma');
 const auth = require('../middleware/authMiddleware');
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 const exchangeInclude = {
   user1: { select: { id: true, name: true, username: true, avatar: true, college: true, rating: true } },
@@ -194,6 +193,7 @@ router.get('/:id/messages', auth, async (req, res) => {
   try {
     const messages = await prisma.message.findMany({
       where: { exchangeId: parseInt(req.params.id) },
+      include: { sender: { select: { id: true, name: true, avatar: true, username: true } } },
       orderBy: { createdAt: 'asc' }
     });
     res.json(messages);
